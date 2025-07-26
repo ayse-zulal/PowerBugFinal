@@ -1,14 +1,12 @@
 import React, { useState, useRef } from 'react';
 
 function ImageUploader({ onImageSelect }) {
-
   const [preview, setPreview] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleImageChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-
       onImageSelect(file);
       
       const reader = new FileReader();
@@ -18,7 +16,6 @@ function ImageUploader({ onImageSelect }) {
       reader.readAsDataURL(file);
     }
   };
-
 
   const handleUploadClick = () => {
     fileInputRef.current.click();
