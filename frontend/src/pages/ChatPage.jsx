@@ -39,7 +39,7 @@ function ChatPage() {
       {isLoading && (
         <div>
           <h3>Harika! Sorun analiz ediliyor, lütfen bekle...</h3>
-          {/* loading spinner */}
+          {/* Buraya güzel bir loading spinner eklenebilir */}
         </div>
       )}
 
@@ -48,7 +48,7 @@ function ChatPage() {
       {chatHistory.length > 0 && (
         <div>
           <h3>İşte sohbetimiz:</h3>
-          {/* sohbet baloncukları */}
+          {/* Buraya sohbet baloncukları gelecek */}
           <pre>{JSON.stringify(chatHistory, null, 2)}</pre>
         </div>
       )}
