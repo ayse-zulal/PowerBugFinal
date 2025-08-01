@@ -1,58 +1,84 @@
-import React, { useState } from 'react';
-import ImageUploader from '../components/ImageUploader';
-import { analyzeImage } from '../services/apiService'; 
+import React, { useState, useRef } from 'react';
+
+import ImageUploader from '../components/ImageUploader'; 
+import Whiteboard from '../components/Whiteboard';
 
 function ChatPage() {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [isLoading, setIsLoading] = useState(false); 
-  const [error, setError] = useState(null); 
-  const [chatHistory, setChatHistory] = useState([]); 
 
-  const handleFileSelect = async (file) => {
-    setSelectedFile(file);
-    setIsLoading(true); 
-    setError(null); 
+  const [originalQuestionImage, setOriginalQuestionImage] = useState(null);
+  const [isSessionStarted, setIsSessionStarted] = useState(false);
 
-    try {
-      const response = await analyzeImage(file);
-      
-      console.log('API yanıtı:', response.data);
-      
-      setChatHistory([response.data]);
+  const canvasRef = useRef(null);
+  
+  const handleQuestionUpload = (file) => {
+ 
+    console.log("Yüklenen soru dosyası:", file);
+    
+    // Geçici: Dosyanın bir URL'ini oluşturalım ki Whiteboard'da gösterelim
+    const tempImageUrl = URL.createObjectURL(file);
+    setOriginalQuestionImage(tempImageUrl);
+    setIsSessionStarted(true);
+  };
 
-    } catch (err) {
-      console.error('API hatası:', err);
-      setError('Sorun analiz edilirken bir hata oluştu. Lütfen tekrar deneyin.');
-    } finally {
-      setIsLoading(false); 
-    }
+  const eraseMode = () => {
+    // canvasRef üzerinden tuvalin silgi moduna geçmesini sağlıyoruz.
+    canvasRef.current?.eraseMode(true); 
+  };
+
+  const drawMode = () => {
+    // Tuvalin çizim moduna geri dönmesini sağlıyoruz.
+    canvasRef.current?.eraseMode(false);
+  };
+
+  const undo = () => {
+    // Son yapılan işlemi geri al
+    canvasRef.current?.undo();
+  };
+
+  const redo = () => {
+    // Geri alınan işlemi ileri al
+    canvasRef.current?.redo();
   };
   
+  const clearAll = () => {
+    // Tüm çizimleri temizle
+    canvasRef.current?.clearCanvas();
+  };
+
   return (
-    <div>
-      <h2>Sohbet Ekranı</h2>
-      
-      {!selectedFile && !isLoading && (
-         <ImageUploader onImageSelect={handleFileSelect} />
-      )}
+    <div className="chat-container">
+      <h2 className="chat-title">Sokratik Öğrenme Alanı</h2>
 
-      {isLoading && (
-        <div>
-          <h3>Harika! Sorun analiz ediliyor, lütfen bekle...</h3>
-          {/* Buraya güzel bir loading spinner eklenebilir */}
+      {/* Eğer oturum henüz başlamadıysa, soru yükleme ekranını göster */}
+      {!isSessionStarted ? (
+        <div className="upload-section">
+          <p className="instructions">Lütfen çözmek istediğin sorunun fotoğrafını yükle.</p>
+          <ImageUploader onImageSelect={handleQuestionUpload} />
         </div>
-      )}
-
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      {chatHistory.length > 0 && (
-        <div>
-          <h3>İşte sohbetimiz:</h3>
-          {/* Buraya sohbet baloncukları gelecek */}
-          <pre>{JSON.stringify(chatHistory, null, 2)}</pre>
+      ) : (
+        
+        <div className="whiteboard-session">
+          <div className="toolbar">
+            {/* YENİ ARAÇ KUTUSU BUTONLARI */}
+            <button onClick={drawMode} className="tool-button">Kalem</button>
+            <button onClick={eraseMode} className="tool-button">Silgi</button>
+            <button onClick={undo} className="tool-button">Geri Al</button>
+            <button onClick={redo} className="tool-button">İleri Al</button>
+            <button onClick={clearAll} className="tool-button clear-button">Tümünü Temizle</button>
+          </div>
+          <div className="whiteboard-area">
+            <Whiteboard 
+              // "Uzaktan kumandamızı" Whiteboard'a prop olarak yolluyoruz.
+              ref={canvasRef} 
+              width="100%" 
+              height="500px" 
+              backgroundImage={originalQuestionImage}
+            />
+          </div>
         </div>
-      )}
 
+
+      )}
     </div>
   );
 }
