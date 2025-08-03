@@ -69,10 +69,14 @@ body {
 .whiteboard-area {
   display: flex;
   flex-direction: column;
+  grid-column: 2 / 3; 
+  grid-row: 1 / 2; 
   align-items: center;
   width: 100%; 
   max-width: 800px; 
   margin: 0 auto;
+  flex-grow: 1;
+  
 }
 
 .upload-section {
@@ -86,50 +90,233 @@ body {
   background-color: #fdfdfd;
 }
 
-/* App.css'in en altına ekle */
-
 .whiteboard-session {
-  display: flex;
-  gap: 1.5rem; /* Araç kutusu ile tahta arasına boşluk koyar */
+  display: grid; 
+  grid-template-columns: auto 1fr; 
+  grid-template-rows: auto 1fr; 
+  grid-row: 1 / 3;
+  gap: 1.5rem;
+  align-items: start;
 }
+
 
 .toolbar {
   display: flex;
-  flex-direction: column; /* Butonları alt alta diz */
-  gap: 0.75rem; /* Butonlar arasına boşluk koy */
-  padding: 1rem;
-  background-color: #edf2f7; /* Açık gri arka plan */
-  border-radius: 8px;
+  flex-direction: column;
+  gap: 0.5rem; 
+  padding: 0.75rem;
+  background-color: white; 
+  border-radius: 12px; 
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); 
+  border: 1px solid #e2e8f0;
 }
 
 .tool-button {
-  background-color: white;
-  border: 1px solid #cbd5e0;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+  background-color: transparent; 
+  border: none;
+  padding: 0.75rem; 
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: 500;
+  color: #4a5568; 
   transition: background-color 0.2s, color 0.2s;
 }
 
 .tool-button:hover {
-  background-color: #e2e8f0;
+  background-color: #f7fafc; 
+  color: #2d3748; 
 }
 
 .clear-button {
-  margin-top: auto; /* Bu butonu en alta iter */
-  background-color: #fed7d7; /* Kırmızımsı */
-  color: #c53030;
+  margin-top: 1rem; 
+  color: #e53e3e; 
 }
 
 .clear-button:hover {
-  background-color: #fbb6b6;
+  background-color: #fff5f5; 
+  color: #c53030;
 }
 
-/* .whiteboard-area'yı güncelleyelim */
-.whiteboard-area {
-  flex-grow: 1; /* Mevcut alanda yayılmasını sağlar */
+.tool-section {
+  padding: 0.5rem 0;
+  border-top: 1px solid #e2e8f0; 
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
 }
+
+.color-picker-box {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%; 
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px #cbd5e0;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.color-picker-box:hover {
+  transform: scale(1.1);
+}
+
+.stroke-slider {
+  width: 80%;
+  cursor: pointer;
+}
+
+
+.popover-container {
+  position: relative; 
+  display: inline-block;
+}
+
+.popover-menu {
+  position: absolute;
+  left: 100%; 
+  top: 0;
+  margin-left: 10px; 
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem;
+  width: 150px; 
+  z-index: 10; 
+}
+
+.tool-section.vertical {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.tool-section.vertical label {
+  font-size: 0.875rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.color-palette {
+  display: flex;
+  gap: 0.5rem;
+}
+
+
+.session-container {
+  position: relative; 
+  width: 100%;
+}
+
+.main-content {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start; 
+  transition: margin-left 0.3s ease-in-out; 
+}
+
+.chat-drawer {
+  position: fixed; 
+  left: -400px; 
+  top: 0;
+  width: 350px;
+  height: 100%;
+  background-color: #f8fafc;
+  box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+  z-index: 20; 
+  transition: left 0.3s ease-in-out; 
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-drawer.open {
+  left: 0; 
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.75rem;
+}
+
+.drawer-header h3 { 
+  margin: 0; 
+  color: #4a5568;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #a0aec0;
+  padding: 0 0.5rem;
+}
+
+.close-button:hover {
+  color: #4a5568;
+}
+
+.mic-button-toolbar {
+  color: #d32f2f; 
+}
+
+.mic-button-toolbar:hover {
+  background-color: #fff5f5;
+  color: #c53030;
+}
+
+.drawer-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden; 
+}
+
+.drawer-content .transcript-box {
+    flex-grow: 1; 
+    overflow-y: auto; /* İÇERİK SIĞMAZSA KAYDIRMA ÇUBUĞU ÇIKAR */
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.drawer-content .speech-controls {
+    display: flex;
+    justify-content: center;
+    padding-top: 1rem;
+}
+
+.drawer-content .mic-button {
+    background-color: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.drawer-content .mic-button:hover {
+    background-color: #c62828;
+    transform: scale(1.05);
+}
+
+.chat-drawer.open + .main-content {
+  margin-left: 350px; 
+}
+
 
 
 
