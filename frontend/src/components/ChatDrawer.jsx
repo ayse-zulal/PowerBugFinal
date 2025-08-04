@@ -1,6 +1,6 @@
 import React from 'react';
 
-function ChatDrawer({ isOpen, onClose, transcript, videoUrl  }) {
+function ChatDrawer({ isOpen, onClose, transcript, history = [], videoUrl  }) {
   return (
     <div className={`chat-drawer ${isOpen ? 'open' : ''}`}>
       <div className="drawer-header">
@@ -9,7 +9,11 @@ function ChatDrawer({ isOpen, onClose, transcript, videoUrl  }) {
       </div>
       <div className="drawer-content">
         <div className="transcript-box">
-          <p><strong>Öğrenci:</strong> {transcript}</p>
+          {history.map((message, index) => (
+            <div key={index} className={`chat-bubble ${message.sender}`}>
+              <p><strong>{message.sender === 'user' ? 'Öğrenci' : 'AI Koçu'}:</strong> {message.text}</p>
+            </div>
+          ))}
 
           {videoUrl && (
             <div className="video-player-drawer">
