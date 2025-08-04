@@ -317,7 +317,43 @@ body {
   margin-left: 350px; 
 }
 
+.record-button-start {
+  color: #38a169; /* Yeşil */
+}
+.record-button-start:hover {
+  background-color: #f0fff4;
+  color: #2f855a;
+}
 
+.record-button-stop {
+  color: #e53e3e; /* Kırmızı */
+  animation: pulse 1.5s infinite; /* Kayıt sırasında yanıp sönme efekti */
+}
+.record-button-stop:hover {
+  background-color: #fff5f5;
+  color: #c53030;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(229, 62, 62, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0); }
+}
+
+.video-player-drawer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+.video-player-drawer p {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #718096;
+}
+.video-player-drawer video {
+  border-radius: 8px;
+}
 
 
 
