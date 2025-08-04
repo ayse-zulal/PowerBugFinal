@@ -8,15 +8,17 @@ import {
   FaTrash, 
   FaCommentDots, 
   FaMicrophone, 
-  FaStop 
+  FaStop, 
+  FaVideo,
+  FaPaperPlane 
 } from "react-icons/fa";
 
 import ImageUploader from '../components/ImageUploader'; 
 import Whiteboard from '../components/Whiteboard';
 import ToolbarPopover from '../components/ToolbarPopover';
 import ChatDrawer from '../components/ChatDrawer';
-
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { analyzeTextInteraction, analyzeInteraction } from '../services/apiService';
 
 function ChatPage() {
   
@@ -26,9 +28,13 @@ function ChatPage() {
   const [strokeWidth, setStrokeWidth] = useState(4);
   const canvasRef = useRef(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatHistory, setChatHistory] = useState([]);
 
   const [isRecording, setIsRecording] = useState(false);
   const [videoUrl, setVideoUrl] = useState(null);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const mediaRecorderRef = useRef(null);
   const recordedChunksRef = useRef([]);
@@ -69,7 +75,7 @@ function ChatPage() {
       }
     };
 
-    recorder.onstop = () => {
+    recorder.onstop = async  () => {
       const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
       const url = URL.createObjectURL(blob);
       setVideoUrl(url); // Kaydedilen videoyu göstermek için URL'i state'e ata
@@ -77,6 +83,28 @@ function ChatPage() {
       
       console.log("Kaydedilen video Blob'u:", blob);
       // sendVideoToBackend(blob);
+
+       setIsLoading(true); // Yüklenme durumunu başlat (yeni state)
+      setError(null);
+
+      try {
+        // ÖNCE: Kullanıcının kendi söylediğini geçmişe ekleyelim
+        // (Backend'den ses-metin çevirisi gelene kadar geçici bir metin)
+        const userMessage = { sender: 'user', text: 'Video kaydı gönderildi...' };
+        setChatHistory(prevHistory => [...prevHistory, userMessage]);
+
+        // ŞİMDİ: API'yi çağır
+        const response = await analyzeInteraction(blob, chatHistory);
+
+        // API'den dönen GÜNCEL sohbet geçmişiyle state'i tamamen değiştir
+        setChatHistory(response.data.history);
+
+      } catch (err) {
+        console.error("Analiz hatası:", err);
+        setError("Analiz sırasında bir hata oluştu.");
+      } finally {
+        setIsLoading(false); // Yüklenme durumunu bitir
+      }
     };
 
     recorder.start();
@@ -112,6 +140,27 @@ function ChatPage() {
     canvasRef.current?.setState({ strokeWidth: width });
   };
 
+  const handleSendTranscript = async () => {
+  // Sadece dinleme durduğunda ve metin varsa gönder
+  if (isListening || !transcript) return; 
+
+  const userMessage = { sender: 'user', text: transcript };
+  // Optimistic UI: Kullanıcının mesajını hemen göster
+  const newHistory = [...chatHistory, userMessage];
+  setChatHistory(newHistory);
+
+  try {
+    // analyzeTextInteraction fonksiyonunu burada çağırıyoruz
+    const response = await analyzeTextInteraction(transcript, chatHistory);
+    // Backend'den gelen güncel geçmişle state'i güncelle
+    setChatHistory(response.data.history);
+  } catch (err) {
+    console.error("Metin analizi hatası:", err);
+    // Hata durumunda kullanıcıya bilgi ver
+    // setError("Mesajınız gönderilirken bir hata oluştu.");
+  }
+};
+
   return (
     <div className="chat-container">
       <h2 className="chat-title">Sokratik Öğrenme Alanı</h2>
@@ -128,6 +177,7 @@ function ChatPage() {
             isOpen={isChatOpen} 
             onClose={() => setIsChatOpen(false)} 
             transcript={transcript} 
+            history={chatHistory}
             videoUrl={videoUrl}
           />
 
@@ -175,10 +225,16 @@ function ChatPage() {
               <button onClick={toggleListening} className="tool-button mic-button-toolbar" title={isListening ? 'Dinlemeyi Durdur' : 'Konuşmaya Başla'}>
                 {isListening ? <FaStop size={20} /> : <FaMicrophone size={20} />}
               </button>
+
+              {!isListening && transcript && (
+                <button onClick={handleSendTranscript} className="tool-button record-button-start" title="Konuşmayı Gönder">
+                  <FaPaperPlane size={20} />
+                </button>
+              )}
               
               {!isRecording ? (
                 <button onClick={startRecording} className="tool-button record-button-start" title="Kaydı Başlat">
-                  <FaMicrophone size={20} /> {/* Veya bir "kayıt" ikonu */}
+                  <FaVideo  size={20} /> {/* Veya bir "kayıt" ikonu */}
                 </button>
               ) : (
                 <button onClick={stopRecording} className="tool-button record-button-stop" title="Kaydı Durdur">
