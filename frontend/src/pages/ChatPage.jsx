@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 import { 
   FaPencilAlt, 
@@ -26,6 +26,13 @@ function ChatPage() {
   const [strokeWidth, setStrokeWidth] = useState(4);
   const canvasRef = useRef(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [videoUrl, setVideoUrl] = useState(null);
+
+  const mediaRecorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const streamRef = useRef(null);
   
   const { isListening, transcript, toggleListening } = useSpeechRecognition();
 
@@ -34,6 +41,59 @@ function ChatPage() {
     setOriginalQuestionImage(tempImageUrl);
     setIsSessionStarted(true);
   };
+
+  const startRecording = async () => {
+  setVideoUrl(null);
+  try {
+    const displayStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { cursor: "always" },
+      audio: false,
+    });
+    const audioStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: false,
+    });
+
+    const combinedStream = new MediaStream([
+      ...displayStream.getTracks(),
+      ...audioStream.getTracks(),
+    ]);
+    streamRef.current = combinedStream;
+
+    const recorder = new MediaRecorder(combinedStream);
+    mediaRecorderRef.current = recorder;
+    
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        recordedChunksRef.current.push(event.data);
+      }
+    };
+
+    recorder.onstop = () => {
+      const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      setVideoUrl(url); // Kaydedilen videoyu göstermek için URL'i state'e ata
+      recordedChunksRef.current = [];
+      
+      console.log("Kaydedilen video Blob'u:", blob);
+      // sendVideoToBackend(blob);
+    };
+
+    recorder.start();
+    setIsRecording(true);
+  } catch (err) {
+    console.error("Ekran/Ses kaydı hatası:", err);
+    alert("Ekran ve ses kaydı için izin vermeniz gerekmektedir.");
+  }
+};
+
+  const stopRecording = () => {
+  if (mediaRecorderRef.current) {
+    mediaRecorderRef.current.stop();
+    streamRef.current.getTracks().forEach(track => track.stop());
+    setIsRecording(false);
+  }
+};
 
   const eraseMode = () => { canvasRef.current?.eraseMode(true); };
   const drawMode = () => { canvasRef.current?.eraseMode(false); };
@@ -68,6 +128,7 @@ function ChatPage() {
             isOpen={isChatOpen} 
             onClose={() => setIsChatOpen(false)} 
             transcript={transcript} 
+            videoUrl={videoUrl}
           />
 
           <div className="main-content">
@@ -114,6 +175,17 @@ function ChatPage() {
               <button onClick={toggleListening} className="tool-button mic-button-toolbar" title={isListening ? 'Dinlemeyi Durdur' : 'Konuşmaya Başla'}>
                 {isListening ? <FaStop size={20} /> : <FaMicrophone size={20} />}
               </button>
+              
+              {!isRecording ? (
+                <button onClick={startRecording} className="tool-button record-button-start" title="Kaydı Başlat">
+                  <FaMicrophone size={20} /> {/* Veya bir "kayıt" ikonu */}
+                </button>
+              ) : (
+                <button onClick={stopRecording} className="tool-button record-button-stop" title="Kaydı Durdur">
+                  <FaStop size={20} />
+                </button>
+              )}
+
             </div>
 
             <div className="whiteboard-area">
