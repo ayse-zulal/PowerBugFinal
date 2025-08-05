@@ -1,6 +1,6 @@
 import React from 'react';
 
-function ChatDrawer({ isOpen, onClose, transcript, history = [], videoUrl  }) {
+function ChatDrawer({ isOpen, onClose, transcript, history = [], videoUrl, isLoading  }) {
   return (
     <div className={`chat-drawer ${isOpen ? 'open' : ''}`}>
       <div className="drawer-header">
@@ -14,6 +14,12 @@ function ChatDrawer({ isOpen, onClose, transcript, history = [], videoUrl  }) {
               <p><strong>{message.sender === 'user' ? 'Öğrenci' : 'AI Koçu'}:</strong> {message.text}</p>
             </div>
           ))}
+
+          {isLoading && (
+            <div className="loading-indicator">
+              <p>AI Koçu düşünüyor...</p>
+            </div>
+          )}
 
           {videoUrl && (
             <div className="video-player-drawer">
