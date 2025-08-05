@@ -19,6 +19,7 @@ import ToolbarPopover from '../components/ToolbarPopover';
 import ChatDrawer from '../components/ChatDrawer';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { analyzeTextInteraction, analyzeInteraction } from '../services/apiService';
+import { speakText } from '../services/speechService';
 
 function ChatPage() {
   
@@ -88,16 +89,15 @@ function ChatPage() {
       setError(null);
 
       try {
-        // ÖNCE: Kullanıcının kendi söylediğini geçmişe ekleyelim
-        // (Backend'den ses-metin çevirisi gelene kadar geçici bir metin)
-        const userMessage = { sender: 'user', text: 'Video kaydı gönderildi...' };
-        setChatHistory(prevHistory => [...prevHistory, userMessage]);
-
-        // ŞİMDİ: API'yi çağır
         const response = await analyzeInteraction(blob, chatHistory);
-
         // API'den dönen GÜNCEL sohbet geçmişiyle state'i tamamen değiştir
         setChatHistory(response.data.history);
+
+        // Cevap geldiğinde, son mesajı bul ve seslendir.
+        const aiResponse = response.data.history.find(msg => msg.sender === 'ai');
+        if (aiResponse) {
+          speakText(aiResponse.text);
+        }
 
       } catch (err) {
         console.error("Analiz hatası:", err);
@@ -154,6 +154,13 @@ function ChatPage() {
     const response = await analyzeTextInteraction(transcript, chatHistory);
     // Backend'den gelen güncel geçmişle state'i güncelle
     setChatHistory(response.data.history);
+
+    // Cevap geldiğinde, son mesajı bul ve seslendir.
+    const aiResponse = response.data.history.find(msg => msg.sender === 'ai');
+    if (aiResponse) {
+      speakText(aiResponse.text);
+    }
+
   } catch (err) {
     console.error("Metin analizi hatası:", err);
     // Hata durumunda kullanıcıya bilgi ver
@@ -178,6 +185,7 @@ function ChatPage() {
             onClose={() => setIsChatOpen(false)} 
             transcript={transcript} 
             history={chatHistory}
+            isLoading={isLoading} 
             videoUrl={videoUrl}
           />
 
