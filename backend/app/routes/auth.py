@@ -28,7 +28,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-@router.post("/register")
+@router.post("auth/register")
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.username == user.username).first()
     if db_user:
@@ -40,7 +40,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return {"message": "User registered successfully"}
 
-@router.post("/login")
+@router.post("auth/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.username == form_data.username).first()
     if not db_user or not bcrypt.verify(form_data.password, db_user.password):
@@ -82,7 +82,7 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
 
     return user
 
-@router.get("/me")
+@router.get("auth/me")
 async def read_users_me(current_user: models.User = Depends(get_current_user)):
     return {
         "username": current_user.username,
