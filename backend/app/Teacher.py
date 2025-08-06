@@ -2,7 +2,7 @@ import os
 import time
 import json
 from datetime import datetime
-from . import DatabaseMemory
+from .DatabaseMemory import DatabaseMemory
 from sqlalchemy.orm import Session
 import google.generativeai as genai
 from langchain_core.messages import HumanMessage, AIMessage
@@ -20,37 +20,31 @@ class VideoTeacherSystem:
 
         self.GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
         self.TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
-        # Config yükle
-        
-        # API key kontrolü
+
         if not self.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY api.env dosyasında bulunamadı!")
         if not self.TAVILY_API_KEY:
             raise ValueError("TAVILY_API_KEY api.env dosyasında bulunamadı!")
-        
-        # Environment variables ayarla
+
         os.environ["TAVILY_API_KEY"] = self.TAVILY_API_KEY
 
-        # Genai SDK'sını konfigure et
         genai.configure(api_key=self.GEMINI_API_KEY)
-
-        # Tool'ları tanımla
-        tools = [suggest_video_for_topic, generate_quiz_questions, search_educational_content]
-        
-        # LangChain modelini sakla (text-only için)
-        self.llm = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash", 
-            google_api_key=self.GEMINI_API_KEY
-        )
-        
-        # Tool'lu model için ayrı instance
-        self.llm_with_tools = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash", 
-            google_api_key=self.GEMINI_API_KEY
-        ).bind_tools(tools)
 
         self.memory = DatabaseMemory(db, conversation_id)
 
+    def get_llm(self):
+        return ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash", 
+            google_api_key=self.GEMINI_API_KEY
+            )
+
+    def get_llm_with_tools(self):
+        tools = [suggest_video_for_topic, generate_quiz_questions, search_educational_content]
+        return ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash", 
+            google_api_key=self.GEMINI_API_KEY
+        ).bind_tools(tools)
+    
     def student_progress(self, student_prompt: str):
         """Öğrencinin cevabı olumlu bir ilerleme içeriyor mu"""
         conversation_history = self.memory.get_conversation_history()
@@ -66,8 +60,8 @@ class VideoTeacherSystem:
         
         Başka kelime kullanma.
         """
-        
-        response = self.llm.invoke([HumanMessage(content=system_prompt)])
+
+        response = self.get_llm().invoke([HumanMessage(content=system_prompt)])
         return response.content.strip()
     
     def should_suggest_video(self, student_prompt: str, conversation_history: str) -> bool:
@@ -80,8 +74,8 @@ class VideoTeacherSystem:
         
         Sadece "True" veya "False" yanıtla.
         """
-        
-        response = self.llm.invoke([HumanMessage(content=check_prompt)])
+
+        response = self.get_llm().invoke([HumanMessage(content=check_prompt)])
         return "True" in response.content
     
     def should_search_content(self, student_prompt: str, conversation_history: str) -> bool:
@@ -120,7 +114,7 @@ class VideoTeacherSystem:
         Sadece "True" veya "False" yanıtla.
         """
         
-        response = self.llm.invoke([HumanMessage(content=check_prompt)])
+        response = self.get_llm().invoke([HumanMessage(content=check_prompt)])
         result = "True" in response.content
         
         print(f"🔍 Search decision - Keyword: {has_search_keyword}, AI: {result}")
@@ -138,8 +132,8 @@ class VideoTeacherSystem:
         
         Sadece "True" veya "False" yanıtla.
         """
-        
-        response = self.llm.invoke([HumanMessage(content=check_prompt)])
+
+        response = self.get_llm().invoke([HumanMessage(content=check_prompt)])
         return "True" in response.content
     
     def extract_topic_for_video(self, conversation_history: str) -> str:
@@ -153,7 +147,7 @@ class VideoTeacherSystem:
         Sadece konu adını yaz, başka açıklama yapma.
         """
         
-        response = self.llm.invoke([HumanMessage(content=extract_prompt)])
+        response = self.get_llm().invoke([HumanMessage(content=extract_prompt)])
         return response.content.strip()
     
     def extract_search_query(self, student_prompt: str, conversation_history: str) -> str:
@@ -168,11 +162,24 @@ class VideoTeacherSystem:
         Örnek: "matematik logaritma örnekleri" veya "fizik hareket yasaları"
         """
         
-        response = self.llm.invoke([HumanMessage(content=extract_prompt)])
+        response = self.get_llm().invoke([HumanMessage(content=extract_prompt)])
         return response.content.strip()
-    
 
-    
+    def extract_search_query(self, student_prompt: str, conversation_history: str) -> str:
+        """Arama sorgusu çıkar"""
+        extract_prompt = f"""
+        Konuşma geçmişi: {conversation_history}
+        Öğrencinin son mesajı: {student_prompt}
+
+        Öğrencinin aradığı bilgi için en uygun arama sorgusunu çıkar.
+        Sadece arama terimini ver, başka açıklama yapma.
+
+        Örnek: "matematik logaritma örnekleri" veya "fizik hareket yasaları"
+        """
+
+        response = self.get_llm().invoke([HumanMessage(content=extract_prompt)])
+        return response.content.strip()
+
     def upload_video_to_gemini(self, video_path: str) -> str:
         """Videoyu Gemini File API'ye yükle"""
         try:
@@ -261,14 +268,14 @@ Görevin:
                 teacher_response = response.text
             
             else:
-                response = self.llm.invoke([HumanMessage(content=system_prompt)])
+                response = self.get_llm().invoke([HumanMessage(content=system_prompt)])
                 teacher_response = response.content
             tool_results=[]
             # Tool kullanımı gerekiyorsa tool'lu model kullan
             if should_suggest or should_quiz or should_search:
                 tool_results=[]
                 print("🔧 Tool'lu model kullanılacak")
-                response = self.llm.invoke([HumanMessage(content=system_prompt)])
+                response = self.get_llm().invoke([HumanMessage(content=system_prompt)])
                 # Tool çağrılarını manuel olarak yap
                     
                 if should_suggest:
@@ -319,7 +326,7 @@ Cevabı sadece aşağıdaki gibi bir JSON formatında ver:
 Eğer konu bulamazsan boş bir liste [] döndür.
 """
         try:
-            response = self.llm.invoke([HumanMessage(content=system_prompt)])
+            response = self.get_llm().invoke([HumanMessage(content=system_prompt)])
             # JSON parse etmeye çalış
             response_text = response.content.strip()
             
@@ -355,10 +362,7 @@ Eğer konu bulamazsan boş bir liste [] döndür.
             teacher_response = self.get_teacher_response(student_prompt, video_file_name)
             
             # Hafızaya kaydet
-            self.memory.add_message("student", student_prompt, {
-                "video_path": video_path,
-                "video_file_name": video_file_name
-            })
+            self.memory.add_message("student", student_prompt)
             self.memory.add_message("teacher", teacher_response)
             
             # Video dosyasını temizle
