@@ -8,7 +8,7 @@ app = FastAPI()
 origins = [
     "http://localhost:5173", 
     "http://127.0.0.1:5173",
-    "https://your-frontend-url.com",  
+    "https://teachervoiceai.netlify.app",  
 ]
 
 app.add_middleware(
