@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000'; 
+const API_URL = 'http://localhost:8000'; 
 
 /**
  * @param {File} imageFile 
@@ -45,10 +45,21 @@ export const analyzeInteraction = (videoBlob, history) => {
 
   console.log('API ye gönderiliyor: video ve sohbet geçmişi');
   
-  // Backend'ci arkadaşının endpoint adını teyit et.
+  //endpoint adını teyit et.
   return axios.post(`${API_URL}/analyze-video`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
   });
+};
+
+export const registerUser = (userData) => {
+  // userData{ name, email, password } gibi mi
+  return axios.post(`${API_URL}/auth/register`, userData);
+};
+
+
+export const loginUser = (credentials) => {
+  // credentials { email, password } gibi mi?
+  return axios.post(`${API_URL}/auth/login`, credentials);
 };
