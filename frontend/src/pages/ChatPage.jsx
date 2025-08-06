@@ -1,11 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 import { 
-  FaPencilAlt, 
-  FaEraser, 
-  FaUndo, 
-  FaRedo, 
-  FaTrash, 
   FaCommentDots, 
   FaMicrophone, 
   FaStop, 
@@ -14,8 +9,7 @@ import {
 } from "react-icons/fa";
 
 import ImageUploader from '../components/ImageUploader'; 
-import Whiteboard from '../components/Whiteboard';
-import ToolbarPopover from '../components/ToolbarPopover';
+import TldrawCanvas from '../components/TldrawCanvas';
 import ChatDrawer from '../components/ChatDrawer';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { analyzeTextInteraction, analyzeInteraction } from '../services/apiService';
@@ -25,9 +19,7 @@ function ChatPage() {
   
   const [originalQuestionImage, setOriginalQuestionImage] = useState(null);
   const [isSessionStarted, setIsSessionStarted] = useState(false);
-  const [strokeColor, setStrokeColor] = useState('black'); 
-  const [strokeWidth, setStrokeWidth] = useState(4);
-  const canvasRef = useRef(null);
+  
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatHistory, setChatHistory] = useState([]);
 
@@ -123,23 +115,6 @@ function ChatPage() {
   }
 };
 
-  const eraseMode = () => { canvasRef.current?.eraseMode(true); };
-  const drawMode = () => { canvasRef.current?.eraseMode(false); };
-  const undo = () => { canvasRef.current?.undo(); };
-  const redo = () => { canvasRef.current?.redo(); };
-  const clearAll = () => { canvasRef.current?.clearCanvas(); };
-
-  const changeColor = (color) => {
-    setStrokeColor(color);
-    canvasRef.current?.eraseMode(false);
-    canvasRef.current?.setState({ strokeColor: color });
-  };
-
-  const changeStrokeWidth = (width) => {
-    setStrokeWidth(width);
-    canvasRef.current?.setState({ strokeWidth: width });
-  };
-
   const handleSendTranscript = async () => {
   // Sadece dinleme durduğunda ve metin varsa gönder
   if (isListening || !transcript) return; 
@@ -178,89 +153,59 @@ function ChatPage() {
           <ImageUploader onImageSelect={handleQuestionUpload} />
         </div>
       ) : (
-        <div className="session-container">
-          
+
+        
+        <div className={`session-container ${isChatOpen ? 'drawer-open' : ''}`}>
+            
           <ChatDrawer 
-            isOpen={isChatOpen} 
-            onClose={() => setIsChatOpen(false)} 
-            transcript={transcript} 
-            history={chatHistory}
-            isLoading={isLoading} 
-            videoUrl={videoUrl}
+              isOpen={isChatOpen} 
+              onClose={() => setIsChatOpen(false)} 
+              transcript={transcript} 
+              history={chatHistory}
+              isLoading={isLoading} 
+              videoUrl={videoUrl}
           />
 
-          <div className="main-content">
-            <div className="toolbar">
-              <ToolbarPopover icon={<FaPencilAlt size={20} />}>
-                <div className="tool-section vertical">
-                  <label>Renk</label>
-                  <div className="color-palette">
-                    <div className="color-picker-box" style={{ backgroundColor: 'black' }} onClick={() => changeColor('black')} />
-                    <div className="color-picker-box" style={{ backgroundColor: '#e53e3e' }} onClick={() => changeColor('#e53e3e')} />
-                    <div className="color-picker-box" style={{ backgroundColor: '#3182ce' }} onClick={() => changeColor('#3182ce')} />
-                  </div>
-                </div>
-                 <div className="tool-section vertical">
-                   <label>Kalınlık</label>
-                   <input 
-                     type="range" 
-                     min="1" 
-                     max="20" 
-                     value={strokeWidth} 
-                     onChange={(e) => changeStrokeWidth(e.target.value)}
-                     className="stroke-slider"
-                   />
-                 </div>
-              </ToolbarPopover>
-
-              <button onClick={eraseMode} className="tool-button" title="Silgi">
-                <FaEraser size={20} />
-              </button>
-              <button onClick={undo} className="tool-button" title="Geri Al">
-                <FaUndo size={20} />
-              </button>
-              <button onClick={redo} className="tool-button" title="İleri Al">
-                <FaRedo size={20} />
-              </button>
-              <button onClick={clearAll} className="tool-button clear-button" title="Tümünü Temizle">
-                <FaTrash size={20} />
-              </button>
-
-              <button onClick={() => setIsChatOpen(true)} className="tool-button" title="Sohbeti Göster">
-                <FaCommentDots size={20} />
-              </button>
-
-              <button onClick={toggleListening} className="tool-button mic-button-toolbar" title={isListening ? 'Dinlemeyi Durdur' : 'Konuşmaya Başla'}>
-                {isListening ? <FaStop size={20} /> : <FaMicrophone size={20} />}
-              </button>
-
-              {!isListening && transcript && (
-                <button onClick={handleSendTranscript} className="tool-button record-button-start" title="Konuşmayı Gönder">
-                  <FaPaperPlane size={20} />
-                </button>
-              )}
-              
-              {!isRecording ? (
-                <button onClick={startRecording} className="tool-button record-button-start" title="Kaydı Başlat">
-                  <FaVideo  size={20} /> {/* Veya bir "kayıt" ikonu */}
-                </button>
-              ) : (
-                <button onClick={stopRecording} className="tool-button record-button-stop" title="Kaydı Durdur">
-                  <FaStop size={20} />
-                </button>
-              )}
-
+          <div className="main-area-with-question">
+        
+            <div className="question-display-area">
+              <img src={originalQuestionImage} alt="Analiz edilecek soru" />
             </div>
 
-            <div className="whiteboard-area">
-              <Whiteboard 
-                ref={canvasRef} 
-                width="100%" 
-                height="500px" 
-                backgroundImage={originalQuestionImage}
-                strokeColor={strokeColor}
-                strokeWidth={strokeWidth}
-              />
+            <div className="main-content">
+              <TldrawCanvas />
+
+              <div className="floating-controls">
+            
+                  <button 
+                  onClick={() => setIsChatOpen(prevIsOpen => !prevIsOpen)} 
+                  className="control-button" 
+                  title={isChatOpen ? "Sohbeti Gizle" : "Sohbeti Göster"}
+                  >
+                    <FaCommentDots size={20} />
+                  </button>
+
+                  <button onClick={toggleListening} className="control-button mic-button" title={isListening ? 'Dinlemeyi Durdur' : 'Konuşmaya Başla'}>
+                    {isListening ? <FaStop size={20} /> : <FaMicrophone size={20} />}
+                  </button>
+
+                  {!isListening && transcript && (
+                    <button onClick={handleSendTranscript} className="control-button send-button" title="Konuşmayı Gönder">
+                      <FaPaperPlane size={20} />
+                    </button>
+                  )}
+                  
+                  {!isRecording ? (
+                    <button onClick={startRecording} className="control-button record-button" title="Kaydı Başlat">
+                      <FaVideo  size={20} /> 
+                    </button>
+                  ) : (
+                    <button onClick={stopRecording} className="control-button record-button stop" title="Kaydı Durdur">
+                      <FaStop size={20} />
+                    </button>
+                  )}
+
+              </div>
             </div>
           </div>
         </div>
