@@ -107,11 +107,14 @@ function ChatPage() {
 };
 
   const stopRecording = () => {
-  if (mediaRecorderRef.current) {
+  if (mediaRecorderRef.current && isRecording) {
+    setIsRecording(false);
     mediaRecorderRef.current.stop(); // Bu, onstop olayını tetikleyecek
     streamRef.current.getTracks().forEach(track => track.stop());
-    setIsRecording(false);
-    setIsLoading(true);
+    //setIsLoading(true);
+    if (isListening) {
+        toggleListening();
+      }
   }
 };
 
@@ -156,7 +159,7 @@ function ChatPage() {
       }
     };
     
-  }, [conversationId, chatHistory, transcript]);
+  }, [conversationId, chatHistory, transcript, isRecording]);
 
   
 
@@ -253,6 +256,7 @@ function ChatPage() {
 
 
 export default ChatPage;
+
 
 
 
