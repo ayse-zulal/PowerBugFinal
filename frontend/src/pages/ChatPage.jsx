@@ -69,91 +69,82 @@ function ChatPage() {
     }
   };
 
-  const startRecording = async () => {
-    setVideoUrl(null);
-    if (isListening) { // Eğer sadece sesli dinleme açıksa, önce onu durdur
-      toggleListening();
-    }
-    
-    try {
-      const displayStream = await navigator.mediaDevices.getDisplayMedia({
-        video: { cursor: "always" },
-        audio: true, // Ekran sesini de almayı deneyelim
-      });
-      const audioStream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: false,
-      });
-
-      const combinedStream = new MediaStream([
-        ...displayStream.getTracks(),
-        ...audioStream.getTracks(),
-      ]);
-      streamRef.current = combinedStream;
-
-      const recorder = new MediaRecorder(combinedStream);
-      mediaRecorderRef.current = recorder;
-      
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-
-      // YENİ VE DAHA İYİ onstop MANTIĞI BURADA
-      recorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        setVideoUrl(url);
-        recordedChunksRef.current = [];
+const startRecording = async () => {
+  setVideoUrl(null); // Eski video önizlemesini temizle
+  if (isListening) toggleListening(); // Varsa eski dinlemeyi durdur
   
-        // Bu önemli: O anki transcript'i al, sonra ses tanımayı sıfırla.
-        const voiceTranscript = transcript;
-        if (isListening) {
-          toggleListening();
-        }
+  try {
+    const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+    const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
 
-        // --- API ÇAĞRISI ---
-        // State'e doğrudan güvenmek yerine, güncelleyici fonksiyonları kullanalım
-        setIsLoading(true);
-        setError(null);
-        
-        const userMessage = { sender: 'user', text: `(Video ile anlatım) ${voiceTranscript}` };
-        setChatHistory(prev => [...prev, userMessage]);
+    const combinedStream = new MediaStream([
+      ...displayStream.getTracks(),
+      ...audioStream.getTracks(),
+    ]);
+    streamRef.current = combinedStream;
 
-        sendVideoMessage(conversationId, blob, voiceTranscript)
-          .then(response => {
-            const aiMessage = { sender: 'ai', text: response.data.teacher_response };
-            setChatHistory(prev => [...prev, aiMessage]);
-            speakText(aiMessage.text);
-          })
-          .catch(err => {
-            console.error("Video analizi hatası:", err);
-            setError("Video analizi sırasında bir hata oluştu.");
-          })
-          .finally(() => {
-            setIsLoading(false);
-          });
-      };
-
-      recorder.start();
-      setIsRecording(true);
-      // Video kaydı başlarken ses tanımayı da başlatalım
-      if (!isListening) {
-        toggleListening();
+    const recorder = new MediaRecorder(combinedStream);
+    mediaRecorderRef.current = recorder;
+    
+    // Veri geldikçe biriktir
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        recordedChunksRef.current.push(event.data);
       }
-    } catch (err) {
-      console.error("Ekran/Ses kaydı hatası:", err);
-      alert("Ekran ve ses kaydı için izin vermeniz gerekmektedir.");
-    }
-  };
+    };
+
+    recorder.start();
+    setIsRecording(true);
+    toggleListening(); // Kayıtla birlikte dinlemeyi de başlat
+  } catch (err) {
+    console.error("Ekran/Ses kaydı hatası:", err);
+    alert("Ekran ve ses kaydı için izin vermeniz gerekmektedir.");
+  }
+};
 
   const stopRecording = () => {
-  if (mediaRecorderRef.current) {
-    mediaRecorderRef.current.stop(); // Bu, onstop olayını tetikleyecek
+  if (mediaRecorderRef.current && isRecording) {
+    // Önce dinlemeyi ve kaydı durduralım ki son veriler gelsin
+    if (isListening) {
+      toggleListening();
+    }
+    mediaRecorderRef.current.stop();
     streamRef.current.getTracks().forEach(track => track.stop());
     setIsRecording(false);
     setIsLoading(true);
+
+    // ÖNEMLİ: MediaRecorder'ın son verileri toplamasını beklemek için küçük bir gecikme
+    setTimeout(async () => {
+      const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      setVideoUrl(url);
+      recordedChunksRef.current = []; // Biriktiriciyi sıfırla
+
+      if (!conversationId) {
+        console.error("Sohbet ID'si bulunamadı, video gönderilemiyor.");
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        const voiceTranscript = transcript;
+        const userMessage = { sender: 'user', text: `(Video ile anlatım) ${voiceTranscript}` };
+        setChatHistory(prev => [...prev, userMessage]);
+
+        console.log("Video API'ye gönderiliyor...");
+        const response = await sendVideoMessage(conversationId, blob, voiceTranscript);
+        console.log("Video API yanıtı alındı:", response.data);
+
+        const aiMessage = { sender: 'ai', text: response.data.teacher_response };
+        setChatHistory(prev => [...prev, aiMessage]);
+        speakText(aiMessage.text);
+      } catch (err) {
+        console.error("Video analizi hatası:", err);
+        setError("Video analizi sırasında bir hata oluştu.");
+      } finally {
+        setIsLoading(false);
+      }
+    }, 500); // 500 milisaniye bekle
   }
 };
 
@@ -252,4 +243,5 @@ function ChatPage() {
 
 
 export default ChatPage;
+
 
