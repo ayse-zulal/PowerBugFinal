@@ -39,7 +39,7 @@ function ChatPage() {
   const recordedChunksRef = useRef([]);
   const streamRef = useRef(null);
   
-  const { isListening, transcript, toggleListening, resetTranscript  } = useSpeechRecognition();
+  const { isListening, transcript, toggleListening } = useSpeechRecognition();
 
    const handleQuestionUpload = async (file) => {
     const tempImageUrl = URL.createObjectURL(file);
@@ -156,7 +156,7 @@ function ChatPage() {
       }
     };
     
-  }, [conversationId, chatHistory, transcript, resetTranscript]);
+  }, [conversationId, chatHistory, transcript]);
 
   const handleSendTranscript = useCallback(async () => {
     if (isListening || !transcript || !conversationId) return;
@@ -176,7 +176,7 @@ function ChatPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [isListening, transcript, conversationId, chatHistory, resetTranscript]);
+  }, [isListening, transcript, conversationId, chatHistory]);
 
   return (
     <div className="chat-container">
@@ -248,5 +248,6 @@ function ChatPage() {
     </div>
   );
 }
+
 
 export default ChatPage;
