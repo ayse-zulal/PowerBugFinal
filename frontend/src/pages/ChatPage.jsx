@@ -69,7 +69,7 @@ function ChatPage() {
     }
   };
 
-  const startRecording = async () => {
+    const startRecording = async () => {
     console.log("--- 1. startRecording BAŞLADI ---");
   setVideoUrl(null);
   try {
@@ -87,26 +87,65 @@ function ChatPage() {
       ...audioStream.getTracks(),
     ]);
     streamRef.current = combinedStream;
-
+    
     const recorder = new MediaRecorder(combinedStream);
     mediaRecorderRef.current = recorder;
     
-    recorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        recordedChunksRef.current.push(event.data);
+    // YENİ VE DOĞRU YER: onstop, recorder oluşturulduğu anda tanımlanıyor
+    recorder.onstop = () => {
+      console.log("onstop olayı tetiklendi!"); 
+      
+      const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      setVideoUrl(url); // Videonun chat'e gelmesini sağlar
+      recordedChunksRef.current = [];
+
+      // Backend'e gönderme mantığı da burada
+      setIsLoading(true);
+      setError(null);
+      
+      const voiceTranscript = transcript;
+      if (isListening) {
+        toggleListening();
       }
+
+      // State'e doğrudan erişmek yerine, en güncel halini almak için fonksiyonel güncelleme
+      setChatHistory(prevChatHistory => {
+        const userMessage = { sender: 'user', text: `(Video ile anlatım) ${voiceTranscript}` };
+        const newHistory = [...prevChatHistory, userMessage];
+
+        // API'ye en güncel history ile istek at
+        sendVideoMessage(conversationId, blob, voiceTranscript)
+          .then(response => {
+            const aiMessage = { sender: 'ai', text: response.data.teacher_response };
+            // API cevabını da en güncel history'e ekle
+            setChatHistory(currentHistory => [...currentHistory, aiMessage]);
+            speakText(aiMessage.text);
+          })
+          .catch(err => {
+            console.error("Video analizi hatası:", err);
+            setError("Video analizi sırasında bir hata oluştu.");
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
+        
+        return newHistory; // Optimistic UI için kullanıcı mesajını hemen döndür
+      });
     };
 
-    // !!! recorder.onstop bloğu buradan tamamen SİLİNDİ !!!
-
     recorder.start();
-    console.log("--- 2. recorder.start() ÇAĞRILDI ---");
     setIsRecording(true);
-  } catch (err) {
+    if (!isListening) {
+      toggleListening();
+    }
+    } catch (err) {
     console.error("Ekran/Ses kaydı hatası:", err);
     alert("Ekran ve ses kaydı için izin vermeniz gerekmektedir.");
   }
-};
+  };
+
+  
 
   const stopRecording = () => {
   if (mediaRecorderRef.current && isRecording) {
@@ -122,55 +161,7 @@ function ChatPage() {
   }
 };
 
-  // Bu useEffect, onstop olayını her zaman güncel state'lerle tanımlar
-  useEffect(() => {
-    if (!mediaRecorderRef.current) {
-      console.log("useEffect çalıştı ama recorder henüz yok.");
-      return;
-    }
-    console.log("--- A. useEffect ÇALIŞTI ve onstop BAĞLANDI ---");
-    mediaRecorderRef.current.onstop = async () => {
-      console.log("--- 6. onstop olayı TETİKLENDİ ---");
-      const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-      console.log("--- 7. Blob oluşturuldu. Boyut:", blob.size);
-      const url = URL.createObjectURL(blob);
-      console.log("--- 8. Video URL oluşturuldu:", url);
-      setVideoUrl(url);
-      recordedChunksRef.current = [];
-
-      if (!conversationId) {
-        console.error("Sohbet ID'si bulunamadı, video gönderilemiyor.");
-        setError("Sohbet oturumu bulunamadı.");
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-      try {
-        const voiceTranscript = transcript;
-
-        const userMessage = { sender: 'user', text: `Video ile anlatım: ${voiceTranscript}` };
-        setChatHistory(prev => [...prev, userMessage]);
-        console.log("video gönderiliyor")
-
-        const response = await sendVideoMessage(conversationId, blob, voiceTranscript);
-
-        console.log("Video gönderildi, AI yanıtı alınıyor...");
-
-        const aiMessage = { sender: 'ai', text: response.data.teacher_response };
-        setChatHistory(prev => [...prev, aiMessage]);
-        speakText(aiMessage.text);
-
-      } catch (err) {
-        console.error("Video analizi hatası:", err);
-        setError("Video analizi sırasında bir hata oluştu.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-  }, [conversationId, chatHistory, transcript, isRecording]);
-
+ 
   
 
   const handleSendTranscript = useCallback(async () => {
@@ -266,6 +257,7 @@ function ChatPage() {
 
 
 export default ChatPage;
+
 
 
 
