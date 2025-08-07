@@ -69,13 +69,17 @@ function ChatPage() {
     }
   };
 
-const startRecording = async () => {
-  setVideoUrl(null); // Eski video önizlemesini temizle
-  if (isListening) toggleListening(); // Varsa eski dinlemeyi durdur
-  
+  const startRecording = async () => {
+  setVideoUrl(null);
   try {
-    const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-    const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    const displayStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { cursor: "always" },
+      audio: false,
+    });
+    const audioStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: false,
+    });
 
     const combinedStream = new MediaStream([
       ...displayStream.getTracks(),
@@ -86,16 +90,16 @@ const startRecording = async () => {
     const recorder = new MediaRecorder(combinedStream);
     mediaRecorderRef.current = recorder;
     
-    // Veri geldikçe biriktir
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
         recordedChunksRef.current.push(event.data);
       }
     };
 
+    // !!! recorder.onstop bloğu buradan tamamen SİLİNDİ !!!
+
     recorder.start();
     setIsRecording(true);
-    toggleListening(); // Kayıtla birlikte dinlemeyi de başlat
   } catch (err) {
     console.error("Ekran/Ses kaydı hatası:", err);
     alert("Ekran ve ses kaydı için izin vermeniz gerekmektedir.");
@@ -103,50 +107,56 @@ const startRecording = async () => {
 };
 
   const stopRecording = () => {
-  if (mediaRecorderRef.current && isRecording) {
-    // Önce dinlemeyi ve kaydı durduralım ki son veriler gelsin
-    if (isListening) {
-      toggleListening();
-    }
-    mediaRecorderRef.current.stop();
+  if (mediaRecorderRef.current) {
+    mediaRecorderRef.current.stop(); // Bu, onstop olayını tetikleyecek
     streamRef.current.getTracks().forEach(track => track.stop());
     setIsRecording(false);
     setIsLoading(true);
+  }
+};
 
-    // ÖNEMLİ: MediaRecorder'ın son verileri toplamasını beklemek için küçük bir gecikme
-    setTimeout(async () => {
+  // Bu useEffect, onstop olayını her zaman güncel state'lerle tanımlar
+  useEffect(() => {
+    if (!mediaRecorderRef.current) return;
+
+    mediaRecorderRef.current.onstop = async () => {
       const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
       const url = URL.createObjectURL(blob);
       setVideoUrl(url);
-      recordedChunksRef.current = []; // Biriktiriciyi sıfırla
+      recordedChunksRef.current = [];
 
       if (!conversationId) {
         console.error("Sohbet ID'si bulunamadı, video gönderilemiyor.");
-        setIsLoading(false);
+        setError("Sohbet oturumu bulunamadı.");
         return;
       }
-      
+
+      setIsLoading(true);
+      setError(null);
       try {
         const voiceTranscript = transcript;
-        const userMessage = { sender: 'user', text: `(Video ile anlatım) ${voiceTranscript}` };
-        setChatHistory(prev => [...prev, userMessage]);
 
-        console.log("Video API'ye gönderiliyor...");
+        const userMessage = { sender: 'user', text: `Video ile anlatım: ${voiceTranscript}` };
+        setChatHistory(prev => [...prev, userMessage]);
+        console.log("video gönderiliyor")
+
         const response = await sendVideoMessage(conversationId, blob, voiceTranscript);
-        console.log("Video API yanıtı alındı:", response.data);
+
+        console.log("Video gönderildi, AI yanıtı alınıyor...");
 
         const aiMessage = { sender: 'ai', text: response.data.teacher_response };
         setChatHistory(prev => [...prev, aiMessage]);
         speakText(aiMessage.text);
+
       } catch (err) {
         console.error("Video analizi hatası:", err);
         setError("Video analizi sırasında bir hata oluştu.");
       } finally {
         setIsLoading(false);
       }
-    }, 500); // 500 milisaniye bekle
-  }
-};
+    };
+    
+  }, [conversationId, chatHistory, transcript]);
 
   
 
@@ -243,5 +253,6 @@ const startRecording = async () => {
 
 
 export default ChatPage;
+
 
 
