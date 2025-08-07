@@ -230,13 +230,16 @@ function ChatPage() {
                   )}
                   
                  
-
-                <button onClick={startRecording} className="control-button record-button" title="Kaydı Başlat (TEST)">
-      <FaVideo  size={20} /> 
-  </button>
-  <button onClick={stopRecording} className="control-button record-button stop" title="Kaydı Durdur (TEST)">
-      <FaStop size={20} />
-  </button>
+                  {!isRecording ? (
+                    <button onClick={startRecording} className="control-button record-button" title="Kaydı Başlat">
+                      <FaVideo  size={20} /> 
+                    </button>
+                  ) : (
+                    <button onClick={stopRecording} className="control-button record-button stop" title="Kaydı Durdur">
+                      <FaStop size={20} />
+                    </button>
+                  )}
+                
 
               </div>
             </div>
@@ -249,6 +252,7 @@ function ChatPage() {
 
 
 export default ChatPage;
+
 
 
 
