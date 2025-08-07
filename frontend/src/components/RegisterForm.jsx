@@ -15,10 +15,11 @@ function RegisterForm() {
     setError(null);
     
     try {
-      const response = await registerUser({ name, email, password });
+      const response = await registerUser({ username: name, email, password });
 
       console.log('Kayıt başarılı:', response.data);
-      navigate('/welcome'); 
+      alert('Kayıt başarılı! Giriş yapabilirsiniz.');
+      navigate('/'); 
 
     } catch (err) {
       console.error('Kayıt hatası:', err.response?.data?.detail || err.message);

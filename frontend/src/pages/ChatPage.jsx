@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 import { 
   FaCommentDots, 
@@ -12,10 +12,16 @@ import ImageUploader from '../components/ImageUploader';
 import TldrawCanvas from '../components/TldrawCanvas';
 import ChatDrawer from '../components/ChatDrawer';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
-import { analyzeTextInteraction, analyzeInteraction } from '../services/apiService';
+import { 
+  createConversation, 
+  sendTextMessage, 
+  sendVideoMessage 
+} from '../services/apiService';
 import { speakText } from '../services/speechService';
 
 function ChatPage() {
+
+  const [conversationId, setConversationId] = useState(null);
   
   const [originalQuestionImage, setOriginalQuestionImage] = useState(null);
   const [isSessionStarted, setIsSessionStarted] = useState(false);
@@ -33,12 +39,34 @@ function ChatPage() {
   const recordedChunksRef = useRef([]);
   const streamRef = useRef(null);
   
-  const { isListening, transcript, toggleListening } = useSpeechRecognition();
+  const { isListening, transcript, toggleListening, resetTranscript  } = useSpeechRecognition();
 
-  const handleQuestionUpload = (file) => {
+   const handleQuestionUpload = async (file) => {
     const tempImageUrl = URL.createObjectURL(file);
     setOriginalQuestionImage(tempImageUrl);
-    setIsSessionStarted(true);
+    
+    // Tarayıcı hafızasından kullanıcı ID'sini oku
+    const userId = localStorage.getItem('powerbug_user_id');
+
+    if (!userId) {
+      alert("Lütfen önce giriş yapın!");
+      // navigate('/login'); // Kullanıcıyı login sayfasına yönlendirebilirsin
+      return;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await createConversation(userId, file.name);
+      setConversationId(response.data.conversation_id);
+      setIsSessionStarted(true); // Oturumu başlat
+      console.log("Yeni sohbet oluşturuldu, ID:", response.data.conversation_id);
+    } catch (err) {
+      console.error("Sohbet oluşturma hatası:", err);
+      setError("Yeni bir öğrenme oturumu başlatılırken hata oluştu.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const startRecording = async () => {
@@ -68,36 +96,7 @@ function ChatPage() {
       }
     };
 
-    recorder.onstop = async  () => {
-      const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-      const url = URL.createObjectURL(blob);
-      setVideoUrl(url); // Kaydedilen videoyu göstermek için URL'i state'e ata
-      recordedChunksRef.current = [];
-      
-      console.log("Kaydedilen video Blob'u:", blob);
-      // sendVideoToBackend(blob);
-
-       setIsLoading(true); // Yüklenme durumunu başlat (yeni state)
-      setError(null);
-
-      try {
-        const response = await analyzeInteraction(blob, chatHistory);
-        // API'den dönen GÜNCEL sohbet geçmişiyle state'i tamamen değiştir
-        setChatHistory(response.data.history);
-
-        // Cevap geldiğinde, son mesajı bul ve seslendir.
-        const aiResponse = response.data.history.find(msg => msg.sender === 'ai');
-        if (aiResponse) {
-          speakText(aiResponse.text);
-        }
-
-      } catch (err) {
-        console.error("Analiz hatası:", err);
-        setError("Analiz sırasında bir hata oluştu.");
-      } finally {
-        setIsLoading(false); // Yüklenme durumunu bitir
-      }
-    };
+    // !!! recorder.onstop bloğu buradan tamamen SİLİNDİ !!!
 
     recorder.start();
     setIsRecording(true);
@@ -109,39 +108,75 @@ function ChatPage() {
 
   const stopRecording = () => {
   if (mediaRecorderRef.current) {
-    mediaRecorderRef.current.stop();
+    mediaRecorderRef.current.stop(); // Bu, onstop olayını tetikleyecek
     streamRef.current.getTracks().forEach(track => track.stop());
     setIsRecording(false);
+    setIsLoading(true);
   }
 };
 
-  const handleSendTranscript = async () => {
-  // Sadece dinleme durduğunda ve metin varsa gönder
-  if (isListening || !transcript) return; 
+  // Bu useEffect, onstop olayını her zaman güncel state'lerle tanımlar
+  useEffect(() => {
+    if (!mediaRecorderRef.current) return;
 
-  const userMessage = { sender: 'user', text: transcript };
-  // Optimistic UI: Kullanıcının mesajını hemen göster
-  const newHistory = [...chatHistory, userMessage];
-  setChatHistory(newHistory);
+    mediaRecorderRef.current.onstop = async () => {
+      const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      setVideoUrl(url);
+      recordedChunksRef.current = [];
 
-  try {
-    // analyzeTextInteraction fonksiyonunu burada çağırıyoruz
-    const response = await analyzeTextInteraction(transcript, chatHistory);
-    // Backend'den gelen güncel geçmişle state'i güncelle
-    setChatHistory(response.data.history);
+      if (!conversationId) {
+        console.error("Sohbet ID'si bulunamadı, video gönderilemiyor.");
+        setError("Sohbet oturumu bulunamadı.");
+        return;
+      }
 
-    // Cevap geldiğinde, son mesajı bul ve seslendir.
-    const aiResponse = response.data.history.find(msg => msg.sender === 'ai');
-    if (aiResponse) {
-      speakText(aiResponse.text);
+      setIsLoading(true);
+      setError(null);
+      try {
+        const voiceTranscript = transcript;
+
+        const userMessage = { sender: 'user', text: `Video ile anlatım: ${voiceTranscript}` };
+        setChatHistory(prev => [...prev, userMessage]);
+        console.log("video gönderiliyor")
+
+        const response = await sendVideoMessage(conversationId, blob, voiceTranscript);
+
+        console.log("Video gönderildi, AI yanıtı alınıyor...");
+
+        const aiMessage = { sender: 'ai', text: response.data.teacher_response };
+        setChatHistory(prev => [...prev, aiMessage]);
+        speakText(aiMessage.text);
+
+      } catch (err) {
+        console.error("Video analizi hatası:", err);
+        setError("Video analizi sırasında bir hata oluştu.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+  }, [conversationId, chatHistory, transcript, resetTranscript]);
+
+  const handleSendTranscript = useCallback(async () => {
+    if (isListening || !transcript || !conversationId) return;
+
+    const userMessage = { sender: 'user', text: transcript };
+    setChatHistory(prev => [...prev, userMessage]);
+
+    setIsLoading(true);
+    try {
+      const response = await sendTextMessage(conversationId, transcript);
+      const aiMessage = { sender: 'ai', text: response.data.teacher_response };
+      setChatHistory(prev => [...prev, aiMessage]);
+      speakText(aiMessage.text);
+    } catch (err) {
+      console.error("Metin analizi hatası:", err);
+      setError("Mesaj gönderilirken bir hata oluştu.");
+    } finally {
+      setIsLoading(false);
     }
-
-  } catch (err) {
-    console.error("Metin analizi hatası:", err);
-    // Hata durumunda kullanıcıya bilgi ver
-    // setError("Mesajınız gönderilirken bir hata oluştu.");
-  }
-};
+  }, [isListening, transcript, conversationId, chatHistory, resetTranscript]);
 
   return (
     <div className="chat-container">

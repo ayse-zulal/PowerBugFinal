@@ -5,22 +5,19 @@ const synth = window.speechSynthesis;
  * @param {string} textToSpeak - Seslendirilecek metin.
  */
 export const speakText = (textToSpeak) => {
-  // Eğer tarayıcıda başka bir konuşma devam ediyorsa, önce onu iptal et.
+  if (!textToSpeak || typeof textToSpeak !== 'string') {
+    console.warn('speakText: Geçersiz metin:', textToSpeak);
+    return;
+  }
+
   if (synth.speaking) {
     synth.cancel();
   }
 
-  // Konuşulacak metni ve ayarları içeren yeni bir "konuşma" nesnesi oluştur.
   const utterance = new SpeechSynthesisUtterance(textToSpeak);
-
-  // Hata durumunda konsola bilgi yazdır.
-  utterance.onerror = (event) => {
-    console.error('SpeechSynthesisUtterance.onerror', event);
-  };
-
-  // Konuşma dilini Türkçe olarak ayarlayalım (en iyi sonuç için).
   utterance.lang = 'tr-TR';
-
-  // Konuşmayı başlat.
+  utterance.onerror = (event) => {
+    console.error('Speech error:', event);
+  };
   synth.speak(utterance);
 };

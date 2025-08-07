@@ -1,65 +1,82 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000'; 
+const API_URL = 'https://powerbugfinal.onrender.com'; 
+
 
 /**
- * @param {File} imageFile 
- * @returns {Promise<any>} 
+ * Yeni bir sohbet oturumu 
+ * @param {number} userId - Giriş yapmış kullanıcının ID'si.
+ * @param {string} title - Sohbetin başlığı (opsiyonel).
+ * @returns {Promise<any>} - Oluşturulan sohbetin ID'sini içeren yanıt.
  */
-export const analyzeImage = (imageFile) => {
-  const formData = new FormData();
-  formData.append('file', imageFile); //file anaktarı
-
-  console.log('API servisi: Resim backend\'e gönderiliyor...');
-
-  // POST isteği
-  return axios.post(`${API_URL}/analyze-question`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-};
-
-
-// Sadece Metin Göndermek İçin
-export const analyzeTextInteraction = (transcript, history) => {
-  console.log('API\'ye gönderiliyor: sadece metin ve sohbet geçmişi');
-  // Backend'ci arkadaşınla endpoint adı ve veri yapısı konusunda anlaş:
-  return axios.post(`${API_URL}/analyze-text`, {
-    transcript: transcript,
-    history: history,
+export const createConversation = (userId, title = "Yeni Sokratik Oturum") => {
+  console.log('API: Yeni sohbet oluşturuluyor...');
+  return axios.post(`${API_URL}/conversations/`, {
+    user_id: userId,
+    title: title,
   });
 };
 
 /**
- * Kullanıcının video kaydını ve mevcut sohbet geçmişini analiz için backend'e gönderir.
+ * Belirli bir sohbete sadece metin mesajı gönderir.
+ * @param {number} conversationId - Mevcut sohbetin ID'si.
+ * @param {string} message - Kullanıcının gönderdiği metin.
+ * @returns {Promise<any>} - AI'nin yanıtını içeren nesne.
+ */
+export const sendTextMessage = (conversationId, message) => {
+  console.log(`API: Sohbet #${conversationId}'e metin gönderiliyor...`);
+  return axios.post(`${API_URL}/conversations/${conversationId}/message/`, {
+    message: message,
+  });
+};
+
+/**
+ * Belirli bir sohbete video ve metin mesajı gönderir.
+ * @param {number} conversationId - Mevcut sohbetin ID'si.
  * @param {Blob} videoBlob - Kullanıcının kaydettiği video dosyası.
- * @param {Array} history - Mevcut sohbet geçmişi.
- * @returns {Promise<any>} - API'den dönen güncellenmiş sohbet geçmişi.
+ * @param {string} message - Video ile birlikte gönderilen metin (kullanıcının sesi).
+ * @returns {Promise<any>} - AI'nin yanıtını içeren nesne.
  */
-
-export const analyzeInteraction = (videoBlob, history) => {
+export const sendVideoMessage = (conversationId, videoBlob, message) => {
   const formData = new FormData();
-  formData.append('video', videoBlob, 'recording.webm'); // Dosyaya bir isim verelim
-  formData.append('history', JSON.stringify(history)); // Geçmişi JSON metnine çevirip yolla
+  // Backend'in beklediği anahtar isimleriyle eşleştiriyoruz:
+  formData.append('video', videoBlob, 'recording.webm');
+  formData.append('message', message); 
 
-  console.log('API ye gönderiliyor: video ve sohbet geçmişi');
-  
-  //endpoint adını teyit et.
-  return axios.post(`${API_URL}/analyze-video`, formData, {
+  console.log(`API: Sohbet #${conversationId}'e video gönderiliyor...`);
+  return axios.post(`${API_URL}/conversations/${conversationId}/video/`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
   });
 };
 
+
+// --- KİMLİK DOĞRULAMA (AUTH) FONKSİYONLARI ---
+
+/**
+ * Yeni bir kullanıcı kaydı oluşturur.
+ * @param {object} userData - { name, email, password } içeren nesne.
+ * @returns {Promise<any>}
+ */
 export const registerUser = (userData) => {
-  // userData{ name, email, password } gibi mi
   return axios.post(`${API_URL}/auth/register`, userData);
 };
 
+/**
+ * Mevcut bir kullanıcıyla giriş yapar.
+ * @param {object} credentials - { email, password } içeren nesne.
+ * @returns {Promise<any>}
+ */
+export const loginUser = async ({ username, password }) => {
+  const params = new URLSearchParams();
+  params.append('username', username);
+  params.append('password', password);
 
-export const loginUser = (credentials) => {
-  // credentials { email, password } gibi mi?
-  return axios.post(`${API_URL}/auth/login`, credentials);
+  return await axios.post(`${API_URL}/auth/login`, params, {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    withCredentials: true, 
+  });
 };
