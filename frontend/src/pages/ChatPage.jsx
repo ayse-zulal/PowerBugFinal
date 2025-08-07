@@ -70,6 +70,7 @@ function ChatPage() {
   };
 
   const startRecording = async () => {
+    console.log("--- 1. startRecording BAŞLADI ---");
   setVideoUrl(null);
   try {
     const displayStream = await navigator.mediaDevices.getDisplayMedia({
@@ -99,6 +100,7 @@ function ChatPage() {
     // !!! recorder.onstop bloğu buradan tamamen SİLİNDİ !!!
 
     recorder.start();
+    console.log("--- 2. recorder.start() ÇAĞRILDI ---");
     setIsRecording(true);
   } catch (err) {
     console.error("Ekran/Ses kaydı hatası:", err);
@@ -108,8 +110,10 @@ function ChatPage() {
 
   const stopRecording = () => {
   if (mediaRecorderRef.current && isRecording) {
+    console.log("--- 4. stopRecording BAŞLADI ---");
     setIsRecording(false);
     mediaRecorderRef.current.stop(); // Bu, onstop olayını tetikleyecek
+    console.log("--- 5. recorder.stop() ÇAĞRILDI ---");
     streamRef.current.getTracks().forEach(track => track.stop());
     //setIsLoading(true);
     if (isListening) {
@@ -120,11 +124,17 @@ function ChatPage() {
 
   // Bu useEffect, onstop olayını her zaman güncel state'lerle tanımlar
   useEffect(() => {
-    if (!mediaRecorderRef.current) return;
-
+    if (!mediaRecorderRef.current) {
+      console.log("useEffect çalıştı ama recorder henüz yok.");
+      return;
+    }
+    console.log("--- A. useEffect ÇALIŞTI ve onstop BAĞLANDI ---");
     mediaRecorderRef.current.onstop = async () => {
+      console.log("--- 6. onstop olayı TETİKLENDİ ---");
       const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+      console.log("--- 7. Blob oluşturuldu. Boyut:", blob.size);
       const url = URL.createObjectURL(blob);
+      console.log("--- 8. Video URL oluşturuldu:", url);
       setVideoUrl(url);
       recordedChunksRef.current = [];
 
@@ -256,6 +266,7 @@ function ChatPage() {
 
 
 export default ChatPage;
+
 
 
 
