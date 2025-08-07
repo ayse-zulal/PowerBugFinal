@@ -63,10 +63,6 @@ export const useSpeechRecognition = () => {
     };
   }, []); 
 
-  const resetTranscript = useCallback(() => {
-    setTranscript('');
-  }, []);
-
   const toggleListening = () => {
     if (!SpeechRecognition) {
       alert("Üzgünüz, tarayıcınız ses tanımayı desteklemiyor.");
@@ -84,6 +80,7 @@ export const useSpeechRecognition = () => {
     }
   };
 
-  return { isListening, transcript, toggleListening, resetTranscript, hasSpeechRecognitionSupport: !!SpeechRecognition };
+  return { isListening, transcript, toggleListening, hasSpeechRecognitionSupport: !!SpeechRecognition };
 
 };
+
