@@ -200,18 +200,29 @@ body {
 }
 
 .video-player-drawer {
-  margin-top: 1rem;
-  padding-top: 1rem;
+  width: 100%;
   border-top: 1px solid #e2e8f0;
+  padding-top: 1rem;
 }
 .video-player-drawer p {
   margin-top: 0;
   margin-bottom: 0.5rem;
   font-weight: 500;
   color: #718096;
+  font-size: 0.875rem;
 }
 .video-player-drawer video {
+  width: 100%; /* Kapsayıcısının tamamını doldur */
+  height: auto;
   border-radius: 8px;
+  background-color: #000;
+}
+
+.loading-indicator {
+  text-align: center;
+  padding: 1rem;
+  color: #718096;
+  font-style: italic;
 }
 
 .tldraw-container {
@@ -426,4 +437,5 @@ body {
   .session-wrapper.drawer-is-open {
     grid-template-columns: 0 1fr;
   }
+
 }
