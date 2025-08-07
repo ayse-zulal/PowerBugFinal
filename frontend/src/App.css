@@ -343,7 +343,35 @@ body {
   border-radius: 8px;
 }
 
+.chat-bubble {
+  max-width: 80%; /* Baloncukların çok geniş olmasını engelle */
+  padding: 10px 15px;
+  border-radius: 18px; /* Yuvarlak kenarlar */
+  margin-bottom: 10px;
+  line-height: 1.4;
+  word-wrap: break-word; /* Uzun kelimelerin taşmasını engelle */
+}
 
+/* Baloncuğun içindeki paragraf için varsayılanları sıfırla */
+.chat-bubble p {
+  margin: 0;
+}
+
+/* Kullanıcıdan gelen mesajlar (Sağa hizalı ve mavi) */
+.chat-bubble.user {
+  background-color: #007bff; /* Mavi */
+  color: white;
+  margin-left: auto; /* Sağa hizala */
+  border-bottom-right-radius: 4px; /* Sağ alt köşeyi daha keskin yap */
+}
+
+/* AI Koçundan gelen mesajlar (Sola hizalı ve gri) */
+.chat-bubble.ai {
+  background-color: #e9ecef; /* Açık gri */
+  color: #343a40; /* Koyu gri metin */
+  margin-right: auto; /* Sola hizala */
+  border-bottom-left-radius: 4px; /* Sol alt köşeyi daha keskin yap */
+}
 
 @media (max-width: 1500px) {
   
@@ -439,3 +467,4 @@ body {
   }
 
 }
+
