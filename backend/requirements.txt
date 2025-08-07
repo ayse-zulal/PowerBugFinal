@@ -1,0 +1,16 @@
+fastapi
+sqlalchemy
+uvicorn[standard]
+psycopg2-binary
+python-dotenv
+passlib[bcrypt]
+python-jose[cryptography]
+pydantic[email]
+python-jose
+python-multipart
+bcrypt==4.0.1
+langchain-core
+langchain-tavily
+langchain-google-genai
+google-generativeai
+youtube-search-python

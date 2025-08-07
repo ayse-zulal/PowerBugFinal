@@ -1,0 +1,151 @@
+
+.auth-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f0f2f5;
+  font-family: 'Poppins', sans-serif;
+}
+
+.container {
+  position: relative;
+  width: 800px;
+  height: 500px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* === FORM ALANLARI === */
+.form-box {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.6s ease-in-out;
+}
+
+.form-box form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 0 40px;
+}
+
+.form-box h1 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+}
+
+.input-box {
+  position: relative;
+  width: 100%;
+  margin: 10px 0;
+}
+
+.input-box input {
+  width: 100%;
+  padding: 12px;
+  background: #f0f2f5;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+}
+
+.btn {
+  width: 100%;
+  padding: 12px;
+  background: #5c67f2;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #fff;
+  font-weight: 600;
+  margin-top: 20px;
+}
+
+.toggle-box {
+  position: absolute;
+  top: 0;
+  left: 50%; 
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
+  transition: all 0.6s ease-in-out;
+  border-radius: 150px 0 0 150px;
+  z-index: 100;
+  background: linear-gradient(to right, #5c67f2, #8d72ff);
+  color: white;
+}
+
+.toggle-panel {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  padding: 0 30px;
+  transition: all 0.6s ease-in-out;
+}
+
+.toggle-panel .btn {
+  width: 160px;
+  background: transparent;
+  border: 2px solid #fff;
+}
+
+
+.form-box.login { left: 0; z-index: 2; }
+.form-box.register { left: 50%; opacity: 0; z-index: 1; } 
+
+.container.active .form-box.login {
+  transform: translateX(-100%); /* Login'i sola ittirerek gizle */
+  z-index: 1;
+  opacity: 0;
+}
+
+.container.active .form-box.register {
+  transform: translateX(0); /* Register'ı görünür alana çek */
+  z-index: 2;
+  opacity: 1;
+}
+
+.toggle-panel.toggle-left { transform: translateX(-200%); }
+.toggle-panel.toggle-right { transform: translateX(0); }
+/*
+.container.active .toggle-box {
+  left: 0;
+  border-radius: 0 150px 150px 0;
+}*/
+
+.container.active .toggle-box {
+  transform: translateX(-100%); /* Geçiş panelini sola kaydır */
+}
+
+.container.active .toggle-panel.toggle-left { transform: translateX(0); }
+.container.active .toggle-panel.toggle-right { transform: translateX(200%); }
+
+.toggle-panel p {
+  max-width: 250px; 
+  margin-bottom: 20px;
+}
+
+.input-box i.icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    color: #888;
+}

@@ -66,14 +66,7 @@ body {
   text-align: center;
 }
 
-.whiteboard-area {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%; 
-  max-width: 800px; 
-  margin: 0 auto;
-}
+
 
 .upload-section {
   display: flex;
@@ -86,52 +79,351 @@ body {
   background-color: #fdfdfd;
 }
 
-/* App.css'in en altına ekle */
-
-.whiteboard-session {
-  display: flex;
-  gap: 1.5rem; /* Araç kutusu ile tahta arasına boşluk koyar */
+.session-container {
+  position: relative; 
+  transition: padding-left 0.3s ease-in-out;
 }
 
-.toolbar {
-  display: flex;
-  flex-direction: column; /* Butonları alt alta diz */
-  gap: 0.75rem; /* Butonlar arasına boşluk koy */
+.session-container.drawer-open {
+  
+  padding-left: 120px;
+}
+
+.main-content {
+ position: relative;
+  flex-grow: 1;
+  height: 100%;
+}
+
+.chat-drawer {
+  position: fixed; 
+  left: 0px; 
+  top: 0;
+  width: 350px;
+  height: 100%;
+  background-color: #f8fafc;
+  box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+  z-index: 20; 
+  transform: translateX(-100%);
+  transition: left 0.3s ease-in-out; 
   padding: 1rem;
-  background-color: #edf2f7; /* Açık gri arka plan */
-  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
 }
 
-.tool-button {
-  background-color: white;
-  border: 1px solid #cbd5e0;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+.chat-drawer.open {
+  transform: translateX(0); 
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.75rem;
+}
+
+.drawer-header h3 { 
+  margin: 0; 
+  color: #4a5568;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  line-height: 1;
   cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s, color 0.2s;
+  color: #a0aec0;
+  padding: 0 0.5rem;
 }
 
-.tool-button:hover {
-  background-color: #e2e8f0;
+.close-button:hover {
+  color: #4a5568;
 }
 
-.clear-button {
-  margin-top: auto; /* Bu butonu en alta iter */
-  background-color: #fed7d7; /* Kırmızımsı */
+.mic-button-toolbar {
+  color: #d32f2f; 
+}
+
+.mic-button-toolbar:hover {
+  background-color: #fff5f5;
   color: #c53030;
 }
 
-.clear-button:hover {
-  background-color: #fbb6b6;
+.drawer-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden; 
 }
 
-/* .whiteboard-area'yı güncelleyelim */
-.whiteboard-area {
-  flex-grow: 1; /* Mevcut alanda yayılmasını sağlar */
+.drawer-content .transcript-box {
+    flex-grow: 1; 
+    overflow-y: auto; 
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.drawer-content .speech-controls {
+    display: flex;
+    justify-content: center;
+    padding-top: 1rem;
+}
+
+.drawer-content .mic-button {
+    background-color: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.drawer-content .mic-button:hover {
+    background-color: #c62828;
+    transform: scale(1.05);
+}
+
+.chat-drawer.open + .main-content {
+  margin-left: 150px; 
+}
+
+.video-player-drawer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+.video-player-drawer p {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #718096;
+}
+.video-player-drawer video {
+  border-radius: 8px;
+}
+
+.tldraw-container {
+  width: 100%;
+  height: 80vh; 
+  border: 1px solid #ccc;
+}
+
+.tldraw-main-content {
+  position: relative; 
+  width: 100%;
+  height: 80vh; 
+}
+
+.floating-controls {
+  position: fixed;
+  top: 120px;    
+  right: 220px;  
+  
+  display: flex;
+  flex-direction: column; 
+  gap: 10px;
+  z-index: 1000;
+  
+  background-color: white;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.control-button {
+  background-color: transparent; 
+  border: none;
+  border-radius: 6px; 
+  width: 40px; 
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #4a5568;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.control-button:hover {
+  background-color: #f7fafc; 
+  color: #2d3748;
+}
+
+.control-button.mic-button {
+  color: #d32f2f; /* Kırmızı mikrofon */
+}
+.control-button.send-button {
+  color: #38a169; /* Yeşil gönder */
+}
+.control-button.record-button {
+  color: #3182ce; /* Mavi video */
+}
+.control-button.record-button.stop {
+  color: #d32f2f; /* Kırmızı durdur */
+  animation: pulse 1.5s infinite;
+}
+
+/* Yanıp sönme animasyonu */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(229, 62, 62, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0); }
+}
+
+.main-area-with-question {
+  grid-column: 2 / 3;
+  display: flex;
+  gap: 1.5rem; 
+  align-items: flex-start;
+  height: 90vh; 
+}
+
+.question-display-area {
+  position: fixed;
+  top: 80px;    
+  left: 40px;  
+  
+  width: auto;       
+  max-width: 350px;
+
+
+  display: flex;
+  flex-direction: column; 
+  gap: 10px;
+  
+  
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow-y: auto; 
+}
+
+.question-display-area img {
+  width: 100%;
+  max-width: 300px; 
+  height: auto;
+  border-radius: 8px;
+}
+
+.question-display-area h4 {
+  margin-top: 0;
+  text-align: center;
+  color: #718096;
+}
+
+.question-display-area img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
 }
 
 
 
+@media (max-width: 1500px) {
+  
+  
+  .chat-container {
+    padding: 1rem;
+  }
+  .main-area-with-question {
+    flex-direction: column; 
+    align-items: center; 
+    height: auto; 
+    max-height: 250;
+    gap: 2.5rem; 
+  }
+  
+  .question-display-area {
+    width: 10%;
+    height: auto;
+    max-height: 250px; 
+    order: 3; 
+    z-index: 10; 
+  }
+ 
+  .main-content {
+    width: 100%;
+    height: 50vh; 
+    order: 2; 
+  }
+ 
+  .chat-title {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .floating-controls {
+    top: auto;
+    bottom: 15px; 
+    right: 15px;  
+    flex-direction: row; 
+  }
+  .session-container.drawer-open {
+    padding-left: 1; 
+  }
+  .session-container.drawer-is-open .floating-controls {
+    display: none;
+  }
+  
+  .chat-drawer {
+    width: 300px;
+    order: 0;
+  }
+}
 
 
+@media (max-width: 1000px) {
+
+  .question-display-area {
+    display: none; 
+  }
+
+  
+  .main-area-with-question {
+    display: block; 
+    height: 75vh;
+  }
+
+  .main-content {
+    width: 100%;
+    height: 100%; 
+  }
+
+  .chat-title {
+    font-size: 1.5rem; 
+    margin-bottom: 1rem;
+  }
+
+  .floating-controls {
+    gap: 5px;
+    padding: 6px;
+  }
+  .control-button {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .chat-drawer {
+    
+    width: calc(100% - 40px); 
+  }
+  .page-container.drawer-open,
+  .session-wrapper.drawer-is-open {
+    grid-template-columns: 0 1fr;
+  }
+}
